@@ -6,11 +6,7 @@ namespace py = pybind11;
 
 py::buffer compress(py::array_t<double> original, double tol, double s)
 {
-    std::vector<mgard_x::SIZE> shape;
-    for (int i = 0; i < original.ndim(); i++) {
-        shape.push_back(original.shape(i));
-    }
-
+    std::vector<mgard_x::SIZE> shape(original.shape(), original.shape() + original.ndim());
     void *compressed_data = nullptr;
     size_t compressed_size = 0;
 
@@ -19,8 +15,12 @@ py::buffer compress(py::array_t<double> original, double tol, double s)
         original.ndim(), mgard_x::data_type::Double, shape, tol, s, mgard_x::error_bound_type::REL,
         original.data(), compressed_data, compressed_size, false);
 
-    return py::array_t<unsigned char>({static_cast<pybind11::ssize_t>(compressed_size)},
-                                      reinterpret_cast<unsigned char *>(compressed_data));
+    // TODO is there a way to free compressed_data if the py::array is freed?
+    py::array_t<unsigned char> compressed({static_cast<pybind11::ssize_t>(compressed_size)},
+                                          reinterpret_cast<unsigned char *>(compressed_data));
+    delete compressed_data;
+
+    return compressed;
 }
 
 py::array_t<double> decompress(py::buffer compressed)
@@ -30,7 +30,6 @@ py::array_t<double> decompress(py::buffer compressed)
     if (info.format != py::format_descriptor<unsigned char>::format()) {
         throw std::invalid_argument("Input must be a byte array");
     }
-
     if (info.shape.size() != 1) {
         throw std::invalid_argument("Input must be a 1D array");
     }
@@ -43,13 +42,18 @@ py::array_t<double> decompress(py::buffer compressed)
     mgard_x::compress_status_type status =
         decompress(info.ptr, info.size, decompressed_data, shape, dtype, false);
 
-    return py::array_t<double>(shape, reinterpret_cast<double *>(decompressed_data));
+    py::array_t<double> decompressed(shape, reinterpret_cast<double *>(decompressed_data));
+    delete decompressed_data;
+
+    return decompressed;
 }
 
 PYBIND11_MODULE(pymgard, m)
 {
     m.doc() = "MGARD Python bindings";
 
-    m.def("compress", &compress, "Compress a multi-dimensional array");
-    m.def("decompress", &decompress, "Decompress a multi-dimensional array");
+    m.def("compress", &compress, "Compress a multi-dimensional array",
+          py::return_value_policy::take_ownership);
+    m.def("decompress", &decompress, "Decompress a multi-dimensional array",
+          py::return_value_policy::take_ownership);
 }
