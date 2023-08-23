@@ -50,6 +50,8 @@ option(MGARD_ENABLE_UNSTRUCTURED "Enable experimental unstructured mesh support.
 
 option(MGARD_ENABLE_TIMING "Enable timing." OFF)
 
+option(MGARD_ENABLE_PYTHON "Enable Python bindings." OFF)
+
 include(CTest)
 
 # Some boilerplate to setup nice output directories
@@ -398,6 +400,18 @@ if(BUILD_TESTING)
 	add_subdirectory("tests")
 endif()
 
+if(MGARD_ENABLE_PYTHON)
+  include(FetchContent)
+  FetchContent_Declare(
+      pybind11
+      GIT_REPOSITORY https://github.com/pybind/pybind11.git
+      GIT_TAG        stable
+  )
+  FetchContent_MakeAvailable(pybind11)
+  pybind11_add_module(pymgard src/python/bindings.cpp)
+  target_link_libraries(pymgard PRIVATE mgard-library)
+endif()
+
 # Add all targets to the build-tree export set
 export(
   TARGETS mgard-library
@@ -497,6 +511,7 @@ message(STATUS "benchmarks:    ${MGARD_ENABLE_BENCHMARKS}")
 message(STATUS "documentation: ${MGARD_ENABLE_DOCS}")
 message(STATUS "CLI:           ${MGARD_ENABLE_CLI}")
 message(STATUS "unstructured:  ${MGARD_ENABLE_UNSTRUCTURED}")
+message(STATUS "Python API:    ${MGARD_ENABLE_PYTHON}")
 list(POP_BACK CMAKE_MESSAGE_INDENT)
 
 message(STATUS "")
