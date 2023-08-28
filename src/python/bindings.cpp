@@ -15,24 +15,24 @@ py::buffer compress(py::array_t<double> original, double tol, double s)
         original.ndim(), mgard_x::data_type::Double, shape, tol, s, mgard_x::error_bound_type::REL,
         original.data(), compressed_data, compressed_size, false);
 
-    switch(status) {
-        case mgard_x::compress_status_type::Success:
-            break;
-        case mgard_x::compress_status_type::Failure:
-            throw std::runtime_error("Compression failure");
-            break;
-        case mgard_x::compress_status_type::OutputTooLargeFailure:
-            throw std::length_error("Output too large");
-            break;
-        case mgard_x::compress_status_type::NotSupportHigherNumberOfDimensionsFailure:
-            throw std::invalid_argument("Not supported higher number of dimensions");
-            break;
-        case mgard_x::compress_status_type::NotSupportDataTypeFailure:
-            throw std::invalid_argument("Not supported data type");
-            break;
-        case mgard_x::compress_status_type::BackendNotAvailableFailure:
-            throw std::invalid_argument("Backed not available");
-            break;
+    switch (status) {
+    case mgard_x::compress_status_type::Success:
+        break;
+    case mgard_x::compress_status_type::Failure:
+        throw std::runtime_error("Compression failure");
+        break;
+    case mgard_x::compress_status_type::OutputTooLargeFailure:
+        throw std::length_error("Output too large");
+        break;
+    case mgard_x::compress_status_type::NotSupportHigherNumberOfDimensionsFailure:
+        throw std::invalid_argument("Not supported higher number of dimensions");
+        break;
+    case mgard_x::compress_status_type::NotSupportDataTypeFailure:
+        throw std::invalid_argument("Not supported data type");
+        break;
+    case mgard_x::compress_status_type::BackendNotAvailableFailure:
+        throw std::invalid_argument("Backed not available");
+        break;
     }
 
     return py::array_t<unsigned char>({compressed_size}, {1},
@@ -59,24 +59,21 @@ py::array_t<double> decompress(py::buffer compressed)
     mgard_x::compress_status_type status =
         decompress(info.ptr, info.size, decompressed_data, shape, dtype, false);
 
-    switch(status) {
-        case mgard_x::compress_status_type::Success:
-            break;
-        case mgard_x::compress_status_type::Failure:
-            throw std::runtime_error("Compression failure");
-            break;
-        case mgard_x::compress_status_type::OutputTooLargeFailure:
-            throw std::length_error("Output too large");
-            break;
-        case mgard_x::compress_status_type::NotSupportHigherNumberOfDimensionsFailure:
-            throw std::invalid_argument("Not supported higher number of dimensions");
-            break;
-        case mgard_x::compress_status_type::NotSupportDataTypeFailure:
-            throw std::invalid_argument("Not supported data type");
-            break;
-        case mgard_x::compress_status_type::BackendNotAvailableFailure:
-            throw std::invalid_argument("Backed not available");
-            break;
+    switch (status) {
+    case mgard_x::compress_status_type::Success:
+        break;
+    case mgard_x::compress_status_type::Failure:
+        throw std::runtime_error("Compression failure");
+        break;
+    case mgard_x::compress_status_type::NotSupportHigherNumberOfDimensionsFailure:
+        throw std::invalid_argument("Not supported higher number of dimensions");
+        break;
+    case mgard_x::compress_status_type::NotSupportDataTypeFailure:
+        throw std::invalid_argument("Not supported data type");
+        break;
+    case mgard_x::compress_status_type::BackendNotAvailableFailure:
+        throw std::invalid_argument("Backed not available");
+        break;
     }
 
     return py::array_t<double>(shape, reinterpret_cast<double *>(decompressed_data),
@@ -86,6 +83,31 @@ py::array_t<double> decompress(py::buffer compressed)
 PYBIND11_MODULE(pymgard, m)
 {
     m.doc() = "MGARD Python bindings";
+
+    py::enum_<mgard_x::device_type>(m, "DeviceType")
+        .value("Auto", mgard_x::device_type::AUTO)
+        .value("SERIAL", mgard_x::device_type::SERIAL)
+        .value("OPENMP", mgard_x::device_type::OPENMP)
+        .value("CUDA", mgard_x::device_type::CUDA)
+        .value("HIP", mgard_x::device_type::HIP)
+        .value("SYCL", mgard_x::device_type::SYCL);
+
+    py::enum_<mgard_x::lossless_type>(m, "LosslessType")
+        .value("Huffman", mgard_x::lossless_type::Huffman)
+        .value("HuffmanLZ4", mgard_x::lossless_type::Huffman_LZ4)
+        .value("HuffmanZstd", mgard_x::lossless_type::Huffman_Zstd);
+
+    py::enum_<mgard_x::domain_decomposition_type>(m, "DomainDecompositionType")
+        .value("MaxDim", mgard_x::domain_decomposition_type::MaxDim)
+        .value("Block", mgard_x::domain_decomposition_type::Block);
+
+    py::enum_<mgard_x::decomposition_type>(m, "DecompositionType")
+        .value("MultiDim", mgard_x::decomposition_type::MultiDim)
+        .value("SingleDim", mgard_x::decomposition_type::SingleDim);
+
+    py::enum_<mgard_x::error_bound_type>(m, "ErrorBoundType")
+        .value("REL", mgard_x::error_bound_type::REL)
+        .value("ABS", mgard_x::error_bound_type::ABS);
 
     m.def("compress", &compress, "Compress a multi-dimensional array",
           py::return_value_policy::take_ownership);
