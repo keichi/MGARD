@@ -4,7 +4,8 @@
 
 namespace py = pybind11;
 
-py::buffer compress(py::array_t<double> original, double tol, double s)
+py::buffer compress(py::array_t<double> original, double tol, double s,
+                    mgard_x::error_bound_type error_bound_type, mgard_x::Config config)
 {
     std::vector<mgard_x::SIZE> shape(original.shape(), original.shape() + original.ndim());
     void *compressed_data = nullptr;
@@ -12,8 +13,8 @@ py::buffer compress(py::array_t<double> original, double tol, double s)
 
     // TODO Accept mgard_x::Config
     mgard_x::compress_status_type status = mgard_x::compress(
-        original.ndim(), mgard_x::data_type::Double, shape, tol, s, mgard_x::error_bound_type::REL,
-        original.data(), compressed_data, compressed_size, false);
+        original.ndim(), mgard_x::data_type::Double, shape, tol, s, error_bound_type,
+        original.data(), compressed_data, compressed_size, config, false);
 
     switch (status) {
     case mgard_x::compress_status_type::Success:
@@ -31,7 +32,7 @@ py::buffer compress(py::array_t<double> original, double tol, double s)
         throw std::invalid_argument("Not supported data type");
         break;
     case mgard_x::compress_status_type::BackendNotAvailableFailure:
-        throw std::invalid_argument("Backed not available");
+        throw std::invalid_argument("Backend not available");
         break;
     }
 
@@ -40,7 +41,7 @@ py::buffer compress(py::array_t<double> original, double tol, double s)
                                       py::capsule(compressed_data, [](void *ptr) { delete ptr; }));
 }
 
-py::array_t<double> decompress(py::buffer compressed)
+py::array_t<double> decompress(py::buffer compressed, mgard_x::Config config)
 {
     py::buffer_info info = compressed.request();
 
@@ -57,7 +58,7 @@ py::array_t<double> decompress(py::buffer compressed)
 
     // TODO Accept mgard_x::Config
     mgard_x::compress_status_type status =
-        decompress(info.ptr, info.size, decompressed_data, shape, dtype, false);
+        decompress(info.ptr, info.size, decompressed_data, shape, dtype, config, false);
 
     switch (status) {
     case mgard_x::compress_status_type::Success:
@@ -72,7 +73,7 @@ py::array_t<double> decompress(py::buffer compressed)
         throw std::invalid_argument("Not supported data type");
         break;
     case mgard_x::compress_status_type::BackendNotAvailableFailure:
-        throw std::invalid_argument("Backed not available");
+        throw std::invalid_argument("Backend not available");
         break;
     }
 
@@ -127,8 +128,10 @@ PYBIND11_MODULE(pymgard, m)
         .def_readwrite("max_memory_footprint", &mgard_x::Config::max_memory_footprint)
         .def_readwrite("adjust_shape", &mgard_x::Config::adjust_shape);
 
-    m.def("compress", &compress, "Compress a multi-dimensional array",
-          py::return_value_policy::take_ownership);
-    m.def("decompress", &decompress, "Decompress a multi-dimensional array",
-          py::return_value_policy::take_ownership);
+    m.def("compress", &compress, "Compress a multi-dimensional array", py::arg("original"),
+          py::arg("tol"), py::arg("s"),
+          py::arg("error_bound_type") = mgard_x::error_bound_type::REL,
+          py::arg("config") = mgard_x::Config());
+    m.def("decompress", &decompress, "Decompress a multi-dimensional array", py::arg("compressed"),
+          py::arg("config") = mgard_x::Config());
 }
