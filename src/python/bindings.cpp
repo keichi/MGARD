@@ -11,7 +11,6 @@ py::buffer compress(py::array_t<double> original, double tol, double s,
     void *compressed_data = nullptr;
     size_t compressed_size = 0;
 
-    // TODO Accept mgard_x::Config
     mgard_x::compress_status_type status = mgard_x::compress(
         original.ndim(), mgard_x::data_type::Double, shape, tol, s, error_bound_type,
         original.data(), compressed_data, compressed_size, config, false);
@@ -56,7 +55,6 @@ py::array_t<double> decompress(py::buffer compressed, mgard_x::Config config)
     std::vector<mgard_x::SIZE> shape;
     mgard_x::data_type dtype;
 
-    // TODO Accept mgard_x::Config
     mgard_x::compress_status_type status =
         decompress(info.ptr, info.size, decompressed_data, shape, dtype, config, false);
 
