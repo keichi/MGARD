@@ -10,17 +10,34 @@ py::buffer compress(py::array_t<double> original, double tol, double s)
     void *compressed_data = nullptr;
     size_t compressed_size = 0;
 
-    // TODO accept mgard_x::Config and check status
+    // TODO Accept mgard_x::Config
     mgard_x::compress_status_type status = mgard_x::compress(
         original.ndim(), mgard_x::data_type::Double, shape, tol, s, mgard_x::error_bound_type::REL,
         original.data(), compressed_data, compressed_size, false);
 
-    // TODO is there a way to free compressed_data if the py::array is freed?
-    py::array_t<unsigned char> compressed({static_cast<pybind11::ssize_t>(compressed_size)},
-                                          reinterpret_cast<unsigned char *>(compressed_data));
-    delete compressed_data;
+    switch(status) {
+        case mgard_x::compress_status_type::Success:
+            break;
+        case mgard_x::compress_status_type::Failure:
+            throw std::runtime_error("Compression failure");
+            break;
+        case mgard_x::compress_status_type::OutputTooLargeFailure:
+            throw std::length_error("Output too large");
+            break;
+        case mgard_x::compress_status_type::NotSupportHigherNumberOfDimensionsFailure:
+            throw std::invalid_argument("Not supported higher number of dimensions");
+            break;
+        case mgard_x::compress_status_type::NotSupportDataTypeFailure:
+            throw std::invalid_argument("Not supported data type");
+            break;
+        case mgard_x::compress_status_type::BackendNotAvailableFailure:
+            throw std::invalid_argument("Backed not available");
+            break;
+    }
 
-    return compressed;
+    return py::array_t<unsigned char>({compressed_size}, {1},
+                                      static_cast<unsigned char *>(compressed_data),
+                                      py::capsule(compressed_data, [](void *ptr) { delete ptr; }));
 }
 
 py::array_t<double> decompress(py::buffer compressed)
@@ -38,14 +55,32 @@ py::array_t<double> decompress(py::buffer compressed)
     std::vector<mgard_x::SIZE> shape;
     mgard_x::data_type dtype;
 
-    // TODO accept mgard_x::Config and check status
+    // TODO Accept mgard_x::Config
     mgard_x::compress_status_type status =
         decompress(info.ptr, info.size, decompressed_data, shape, dtype, false);
 
-    py::array_t<double> decompressed(shape, reinterpret_cast<double *>(decompressed_data));
-    delete decompressed_data;
+    switch(status) {
+        case mgard_x::compress_status_type::Success:
+            break;
+        case mgard_x::compress_status_type::Failure:
+            throw std::runtime_error("Compression failure");
+            break;
+        case mgard_x::compress_status_type::OutputTooLargeFailure:
+            throw std::length_error("Output too large");
+            break;
+        case mgard_x::compress_status_type::NotSupportHigherNumberOfDimensionsFailure:
+            throw std::invalid_argument("Not supported higher number of dimensions");
+            break;
+        case mgard_x::compress_status_type::NotSupportDataTypeFailure:
+            throw std::invalid_argument("Not supported data type");
+            break;
+        case mgard_x::compress_status_type::BackendNotAvailableFailure:
+            throw std::invalid_argument("Backed not available");
+            break;
+    }
 
-    return decompressed;
+    return py::array_t<double>(shape, reinterpret_cast<double *>(decompressed_data),
+                               py::capsule(decompressed_data, [](void *ptr) { delete ptr; }));
 }
 
 PYBIND11_MODULE(pymgard, m)
