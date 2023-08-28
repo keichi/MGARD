@@ -109,6 +109,24 @@ PYBIND11_MODULE(pymgard, m)
         .value("REL", mgard_x::error_bound_type::REL)
         .value("ABS", mgard_x::error_bound_type::ABS);
 
+    py::class_<mgard_x::Config>(m, "Config")
+        .def(py::init())
+        .def_readwrite("dev_type", &mgard_x::Config::dev_type)
+        .def_readwrite("dev_id", &mgard_x::Config::dev_id)
+        .def_readwrite("num_dev", &mgard_x::Config::num_dev)
+        .def_readwrite("reorder", &mgard_x::Config::reorder)
+        .def_readwrite("lossless", &mgard_x::Config::lossless)
+        .def_readwrite("huff_dict_size", &mgard_x::Config::huff_dict_size)
+        .def_readwrite("lz4_block_size", &mgard_x::Config::lz4_block_size)
+        .def_readwrite("zstd_compress_level", &mgard_x::Config::zstd_compress_level)
+        .def_readonly("normalize_coordinates", &mgard_x::Config::normalize_coordinates)
+        .def_readwrite("domain_decomposition", &mgard_x::Config::domain_decomposition)
+        .def_readwrite("decomposition", &mgard_x::Config::decomposition)
+        .def_readwrite("max_larget_level", &mgard_x::Config::max_larget_level)
+        .def_readwrite("prefetch", &mgard_x::Config::prefetch)
+        .def_readwrite("max_memory_footprint", &mgard_x::Config::max_memory_footprint)
+        .def_readwrite("adjust_shape", &mgard_x::Config::adjust_shape);
+
     m.def("compress", &compress, "Compress a multi-dimensional array",
           py::return_value_policy::take_ownership);
     m.def("decompress", &decompress, "Decompress a multi-dimensional array",
