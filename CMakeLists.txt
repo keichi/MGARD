@@ -401,6 +401,8 @@ if(BUILD_TESTING)
 endif()
 
 if(MGARD_ENABLE_PYTHON)
+  find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
+
   include(FetchContent)
   FetchContent_Declare(
       pybind11
@@ -408,8 +410,10 @@ if(MGARD_ENABLE_PYTHON)
       GIT_TAG        stable
   )
   FetchContent_MakeAvailable(pybind11)
-  pybind11_add_module(pymgard src/python/bindings.cpp)
-  target_link_libraries(pymgard PRIVATE mgard-library)
+
+  pybind11_add_module(_mgard src/python/bindings.cpp)
+  target_link_libraries(_mgard PRIVATE mgard-library)
+  install(TARGETS _mgard LIBRARY DESTINATION python/mgard)
 endif()
 
 # Add all targets to the build-tree export set

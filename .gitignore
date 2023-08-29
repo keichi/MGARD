@@ -54,3 +54,8 @@ CMakeSettings.json
 
 #'Tags' file.
 tags
+
+# scikit-build temporary directory
+_skbuild/
+
+*.egg-info/

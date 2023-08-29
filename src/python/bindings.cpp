@@ -79,7 +79,7 @@ py::array_t<double> decompress(py::buffer compressed, mgard_x::Config config)
                                py::capsule(decompressed_data, [](void *ptr) { delete ptr; }));
 }
 
-PYBIND11_MODULE(pymgard, m)
+PYBIND11_MODULE(_mgard, m)
 {
     m.doc() = "MGARD Python bindings";
 
